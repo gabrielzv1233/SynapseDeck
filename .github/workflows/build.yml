@@ -1,0 +1,83 @@
+name: Build Plugin
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build SynapseDeck plugin
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate manifest and plugin
+        run: npx streamdeck validate --no-update-check com.gabrielzv1233.synapsedeck.sdPlugin
+
+      - name: Package plugin
+        run: npx streamdeck pack --no-update-check --force --output dist com.gabrielzv1233.synapsedeck.sdPlugin
+
+      - name: Verify package filename
+        shell: pwsh
+        run: |
+          $expected = "dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin"
+          $package = Get-ChildItem -Path dist -Filter *.streamDeckPlugin | Select-Object -First 1
+          if (-not $package) {
+            throw "Stream Deck package was not produced."
+          }
+          if ($package.FullName -ne (Join-Path $PWD $expected)) {
+            Move-Item -Force $package.FullName $expected
+          }
+          if (-not (Test-Path $expected)) {
+            throw "Expected package not found at $expected"
+          }
+
+      - name: Publish direct development build
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "dev-build"
+          $asset = "dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin"
+          $name = "com.gabrielzv1233.synapsedeck.streamDeckPlugin"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f $tag $env:GITHUB_SHA
+          git push origin "refs/tags/$tag" --force
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --verify-tag --prerelease --title "Latest Development Build" --notes "Automatically built from the latest manually requested SynapseDeck build."
+          } else {
+            gh release edit $tag --prerelease --title "Latest Development Build" --notes "Automatically built from commit $env:GITHUB_SHA."
+          }
+
+          gh release upload $tag "$asset#$name" --clobber
+
+          $url = "https://github.com/${{ github.repository }}/releases/download/$tag/$name"
+          "## SynapseDeck build" >> $env:GITHUB_STEP_SUMMARY
+          "" >> $env:GITHUB_STEP_SUMMARY
+          "[$name]($url)" >> $env:GITHUB_STEP_SUMMARY
+          "" >> $env:GITHUB_STEP_SUMMARY
+          "Direct `.streamDeckPlugin` download — no artifact ZIP to unpack." >> $env:GITHUB_STEP_SUMMARY
