@@ -82,11 +82,11 @@ export class SynapseManager {
     const status = this.bridge.status;
     let message = status.message;
     if (status.phase === "missing") {
-      message = "SynapseCTRL is required but could not be found. Install SynapseCTRL, complete its hook setup, then restart Stream Deck.";
+      message = "Install SynapseCTRL and complete its setup, then restart Stream Deck.";
     } else if (status.phase === "synapse-unavailable") {
-      message = "Synapse is not running or prepared. Razer Synapse may be closed, or SynapseCTRL installation/setup may not be complete.";
+      message = "Synapse may be closed, or SynapseCTRL installation/setup may be incomplete.";
     } else if (status.phase === "incompatible") {
-      message = "The installed SynapseCTRL bridge is incompatible with this SynapseDeck version. Update SynapseCTRL.";
+      message = "Update SynapseCTRL to a version compatible with SynapseDeck.";
     }
     return {
       phase: status.phase,
