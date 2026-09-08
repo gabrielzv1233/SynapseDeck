@@ -26,6 +26,9 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
+      - name: Check Property Inspector JavaScript
+        run: node --check com.gabrielzv1233.synapsedeck.sdPlugin/ui/profile.js
+
       - name: Build
         run: npm run build
 
