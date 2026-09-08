@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
@@ -52,32 +50,19 @@ jobs:
             throw "Expected package not found at $expected"
           }
 
-      - name: Publish direct development build
+      - name: Upload direct plugin artifact
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin
+          archive: false
+          if-no-files-found: error
+
+      - name: Add download link to summary
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "dev-build"
-          $asset = "dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin"
-          $name = "com.gabrielzv1233.synapsedeck.streamDeckPlugin"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f $tag $env:GITHUB_SHA
-          git push origin "refs/tags/$tag" --force
-
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --verify-tag --prerelease --title "Latest Development Build" --notes "Automatically built from the latest manually requested SynapseDeck build."
-          } else {
-            gh release edit $tag --prerelease --title "Latest Development Build" --notes "Automatically built from commit $env:GITHUB_SHA."
-          }
-
-          gh release upload $tag "$asset#$name" --clobber
-
-          $url = "https://github.com/${{ github.repository }}/releases/download/$tag/$name"
           "## SynapseDeck build" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
-          "[$name]($url)" >> $env:GITHUB_STEP_SUMMARY
+          "[Download com.gabrielzv1233.synapsedeck.streamDeckPlugin](${{ steps.upload.outputs.artifact-url }})" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
-          "Direct `.streamDeckPlugin` download — no artifact ZIP to unpack." >> $env:GITHUB_STEP_SUMMARY
+          "Uploaded directly as a `.streamDeckPlugin` file with no outer ZIP archive." >> $env:GITHUB_STEP_SUMMARY
