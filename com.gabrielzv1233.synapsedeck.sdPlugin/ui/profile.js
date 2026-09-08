@@ -7,8 +7,39 @@ const deviceSelect = document.getElementById("device");
 const profileSelect = document.getElementById("profile");
 const retryButton = document.getElementById("retry");
 
-let lastDeviceId;
+let initialized = false;
+let suppressSelectionEvents = false;
 let lastPhase;
+let currentSettings = {};
+let deviceLabels = new Map();
+let profileLabels = new Map();
+
+function asSettings(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function labelsFrom(items) {
+  if (!Array.isArray(items)) return new Map();
+  return new Map(
+    items
+      .filter((item) => item && typeof item.value === "string")
+      .map((item) => [item.value, typeof item.label === "string" ? item.label : item.value]),
+  );
+}
+
+function setSelectValue(select, value) {
+  suppressSelectionEvents = true;
+  try {
+    select.value = typeof value === "string" && value.length > 0 ? value : undefined;
+  } finally {
+    suppressSelectionEvents = false;
+  }
+}
+
+async function saveSettings(settings) {
+  currentSettings = settings;
+  await streamDeckClient.setSettings(settings);
+}
 
 function setStatus(status) {
   if (!status || typeof status !== "object") return;
@@ -33,43 +64,98 @@ function setStatus(status) {
 
   const ready = Boolean(status.ready);
   deviceSelect.disabled = !ready;
-  profileSelect.disabled = !ready || !deviceSelect.value;
+  profileSelect.disabled = !ready || !currentSettings.deviceId;
   retryButton.disabled = phase === "starting";
 
   if (ready && lastPhase !== "ready") {
     Promise.resolve(deviceSelect.refresh?.()).catch(() => undefined);
-    Promise.resolve(profileSelect.refresh?.()).catch(() => undefined);
+    if (currentSettings.deviceId) {
+      Promise.resolve(profileSelect.refresh?.()).catch(() => undefined);
+    }
   }
   lastPhase = phase;
 }
 
 async function initialize() {
-  const settings = await streamDeckClient.getSettings();
-  lastDeviceId = settings.deviceId;
-  profileSelect.disabled = !lastDeviceId;
+  // sdpi-select's built-in `setting` persistence emits valuechange while it is
+  // hydrating the control. With dependent selects that can look like a real
+  // device change and clear profileId/profileName. We deliberately own the
+  // complete action-settings object here so each key is updated atomically.
+  currentSettings = asSettings(await streamDeckClient.getSettings());
+  setSelectValue(deviceSelect, currentSettings.deviceId);
+  setSelectValue(profileSelect, currentSettings.profileId);
+  profileSelect.disabled = !currentSettings.deviceId;
+  initialized = true;
   await streamDeckClient.send("sendToPlugin", { event: "getStatus" });
 }
 
 streamDeckClient.sendToPropertyInspector.subscribe((message) => {
   const payload = message?.payload;
   if (!payload || typeof payload !== "object") return;
-  if (payload.event === "status") setStatus(payload.status);
+
+  if (payload.event === "status") {
+    setStatus(payload.status);
+    return;
+  }
+
+  if (payload.event === "getDevices") {
+    deviceLabels = labelsFrom(payload.items);
+    return;
+  }
+
+  if (payload.event === "getProfiles") {
+    profileLabels = labelsFrom(payload.items);
+  }
 });
 
 deviceSelect.addEventListener("valuechange", async () => {
-  const deviceId = typeof deviceSelect.value === "string" ? deviceSelect.value : "";
-  if (deviceId === lastDeviceId) return;
-  lastDeviceId = deviceId;
+  if (!initialized || suppressSelectionEvents) return;
 
-  const settings = await streamDeckClient.getSettings();
-  const next = { ...settings, deviceId };
+  const deviceId = typeof deviceSelect.value === "string" ? deviceSelect.value : "";
+  if (deviceId === (currentSettings.deviceId || "")) return;
+
+  const latest = asSettings(await streamDeckClient.getSettings());
+  const next = { ...latest };
+
+  if (deviceId) {
+    next.deviceId = deviceId;
+    next.deviceName = deviceLabels.get(deviceId) || deviceId;
+  } else {
+    delete next.deviceId;
+    delete next.deviceName;
+  }
+
   delete next.profileId;
   delete next.profileName;
-  await streamDeckClient.setSettings(next);
-  profileSelect.value = undefined;
+
+  setSelectValue(profileSelect, undefined);
+  profileLabels = new Map();
   profileSelect.disabled = !deviceId || lastPhase !== "ready";
-  await streamDeckClient.send("sendToPlugin", { event: "getProfiles", deviceId });
-  await Promise.resolve(profileSelect.refresh?.());
+  await saveSettings(next);
+
+  if (deviceId && lastPhase === "ready") {
+    await Promise.resolve(profileSelect.refresh?.());
+  }
+});
+
+profileSelect.addEventListener("valuechange", async () => {
+  if (!initialized || suppressSelectionEvents) return;
+
+  const profileId = typeof profileSelect.value === "string" ? profileSelect.value : "";
+  if (profileId === (currentSettings.profileId || "")) return;
+
+  const latest = asSettings(await streamDeckClient.getSettings());
+  const next = { ...latest };
+
+  if (profileId) {
+    next.profileId = profileId;
+    next.profileName = profileLabels.get(profileId) || profileId;
+  } else {
+    delete next.profileId;
+    delete next.profileName;
+  }
+
+  await saveSettings(next);
 });
 
 retryButton.addEventListener("click", async () => {
