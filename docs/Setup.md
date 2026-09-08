@@ -133,7 +133,7 @@ SynapseCTRL devices
 SynapseCTRL profiles "Naga"
 ```
 
-If the CLI does not see it, fix the SynapseCTRL/Synapse side first. If the CLI sees it but SynapseDeck does not, use **Retry SynapseCTRL** or restart Stream Deck and report the SynapseDeck logs.
+If the CLI does not see it, fix the SynapseCTRL/Synapse side first. If the CLI sees it but SynapseDeck does not, use **Refresh SynapseCTRL** or restart Stream Deck and report the SynapseDeck logs.
 
 ## A key shows an alert
 
