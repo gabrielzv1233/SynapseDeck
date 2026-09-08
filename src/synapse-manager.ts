@@ -152,7 +152,6 @@ export class SynapseManager {
       }
       this.#setActiveProfile(result.deviceId, result.profileId);
       await this.renderDevice(result.deviceId);
-      await action.showOk();
     } catch (error) {
       streamDeck.logger.error(`Synapse profile switch failed: ${this.#message(error)}`);
       await action.showAlert();
