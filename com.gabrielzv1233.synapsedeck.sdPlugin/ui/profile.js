@@ -16,14 +16,19 @@ function setStatus(status) {
   statusBox.className = `status ${phase}`;
   statusTitle.textContent = {
     ready: "Connected to Razer Synapse",
-    missing: "SynapseCTRL is required",
-    "synapse-unavailable": "Synapse is not running or prepared",
+    missing: "SynapseCTRL is not installed",
+    "synapse-unavailable": "Razer Synapse is not running or prepared",
     incompatible: "SynapseCTRL needs an update",
     error: "SynapseCTRL connection problem",
     stopped: "SynapseCTRL bridge stopped",
     starting: "Connecting to SynapseCTRL…",
   }[phase] || "SynapseDeck status";
-  statusMessage.textContent = status.message || "";
+
+  const compactMessages = {
+    ready: "",
+    "synapse-unavailable": "Synapse may be closed, or SynapseCTRL installation/setup may be incomplete.",
+  };
+  statusMessage.textContent = compactMessages[phase] ?? status.message ?? "";
   if (status.docsUrl) setupLink.href = status.docsUrl;
 
   const ready = Boolean(status.ready);
