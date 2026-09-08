@@ -43,10 +43,3 @@ body {
 .status.error {
   border-left-color: #e2a400;
 }
-
-.footnote {
-  margin: 4px 12px 0;
-  color: #969696;
-  font-size: 8.5pt;
-  line-height: 1.4;
-}
