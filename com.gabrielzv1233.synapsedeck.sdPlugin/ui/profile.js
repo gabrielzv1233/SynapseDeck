@@ -84,7 +84,7 @@ async function initialize() {
   currentSettings = asSettings(await streamDeckClient.getSettings());
   setSelectValue(deviceSelect, currentSettings.deviceId);
   setSelectValue(profileSelect, currentSettings.profileId);
-  profileSelect.disabled = !currentSettings.deviceId;
+  profileSelect.disabled = !currentSettings.deviceId || lastPhase !== "ready";
   initialized = true;
   await streamDeckClient.send("sendToPlugin", { event: "getStatus" });
 }
