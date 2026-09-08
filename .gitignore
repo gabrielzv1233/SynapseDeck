@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.streamDeckPlugin
+*.log
+.DS_Store
+*.tsbuildinfo
+com.gabrielzv1233.synapsedeck.sdPlugin/bin/*
+!com.gabrielzv1233.synapsedeck.sdPlugin/bin/.gitkeep
+com.gabrielzv1233.synapsedeck.sdPlugin/logs/*
+!com.gabrielzv1233.synapsedeck.sdPlugin/logs/.gitkeep
