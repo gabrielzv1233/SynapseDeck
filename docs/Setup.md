@@ -135,6 +135,36 @@ SynapseCTRL profiles "Naga"
 
 If the CLI does not see it, fix the SynapseCTRL/Synapse side first. If the CLI sees it but SynapseDeck does not, use **Refresh SynapseCTRL** or restart Stream Deck and report the SynapseDeck logs.
 
+## Debugging and logs
+
+SynapseDeck uses Stream Deck's normal plugin logger. On Windows the current plugin log is normally located at:
+
+```text
+%APPDATA%\Elgato\StreamDeck\Plugins\com.gabrielzv1233.synapsedeck.sdPlugin\logs\com.gabrielzv1233.synapsedeck.0.log
+```
+
+`0.log` is the newest plugin log. SynapseDeck logs action appearance and settings updates under the `SynapseProfile` scope, which makes it possible to verify exactly what device/profile Stream Deck delivered to each key.
+
+Stream Deck's own application log is at:
+
+```text
+%APPDATA%\Elgato\StreamDeck\logs\StreamDeck0.log
+```
+
+To inspect the Property Inspector itself, enable Stream Deck developer mode from a SynapseDeck source checkout:
+
+```powershell
+npx streamdeck dev
+```
+
+Then keep the Synapse Profile Property Inspector visible and open:
+
+```text
+http://localhost:23654/
+```
+
+Select the SynapseDeck Property Inspector page and use the browser developer console. SynapseDeck writes `Loaded action settings`, `Saving action settings`, and `Received action settings` messages there while configuring a key.
+
 ## A key shows an alert
 
 A yellow Stream Deck alert means the requested profile switch was missing required configuration, could not be sent, or was not verified by Synapse. SynapseDeck intentionally does not claim success unless SynapseCTRL reports `verified` or `already_active`.
