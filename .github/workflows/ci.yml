@@ -30,6 +30,9 @@ jobs:
       - name: Check Property Inspector JavaScript
         run: node --check com.gabrielzv1233.synapsedeck.sdPlugin/ui/profile.js
 
+      - name: Test Property Inspector settings
+        run: node scripts/test-profile-settings.mjs
+
       - name: Build
         run: npm run build
 

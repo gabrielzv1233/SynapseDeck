@@ -13,10 +13,19 @@ import type { JsonValue } from "@elgato/utils";
 import { synapseManager, type ProfileSettings } from "../synapse-manager";
 import { isRecord } from "../synapsectrl/protocol";
 
+const logger = streamDeck.logger.createScope("SynapseProfile");
+
+function describeSettings(settings: ProfileSettings): string {
+  const device = settings.deviceName || settings.deviceId || "<unset>";
+  const profile = settings.profileName || settings.profileId || "<unset>";
+  return `device=${device}, profile=${profile}`;
+}
+
 @action({ UUID: "com.gabrielzv1233.synapsedeck.profile" })
 export class SynapseProfileAction extends SingletonAction<ProfileSettings> {
   override onWillAppear(ev: WillAppearEvent<ProfileSettings>): void {
     if (!ev.action.isKey()) return;
+    logger.info(`Action ${ev.action.id} appeared with ${describeSettings(ev.payload.settings)}`);
     synapseManager.register(ev.action, ev.payload.settings);
   }
 
@@ -26,6 +35,7 @@ export class SynapseProfileAction extends SingletonAction<ProfileSettings> {
 
   override onDidReceiveSettings(ev: DidReceiveSettingsEvent<ProfileSettings>): void {
     if (!ev.action.isKey()) return;
+    logger.info(`Action ${ev.action.id} settings updated: ${describeSettings(ev.payload.settings)}`);
     synapseManager.update(ev.action, ev.payload.settings);
   }
 
@@ -38,6 +48,7 @@ export class SynapseProfileAction extends SingletonAction<ProfileSettings> {
     ev: PropertyInspectorDidAppearEvent<ProfileSettings>,
   ): Promise<void> {
     const settings = await ev.action.getSettings<ProfileSettings>();
+    logger.info(`Property Inspector opened for ${ev.action.id}: ${describeSettings(settings)}`);
     await this.#sendStatus();
     await this.#sendDevices();
     await this.#sendProfiles(settings.deviceId);
@@ -88,6 +99,7 @@ export class SynapseProfileAction extends SingletonAction<ProfileSettings> {
   async #sendProfiles(deviceId?: string): Promise<void> {
     await streamDeck.ui.sendToPropertyInspector({
       event: "getProfiles",
+      deviceId,
       items: await synapseManager.profileItems(deviceId),
     });
   }

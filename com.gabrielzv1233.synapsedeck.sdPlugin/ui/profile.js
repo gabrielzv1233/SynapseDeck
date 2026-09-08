@@ -18,6 +18,14 @@ function asSettings(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+async function readActionSettings() {
+  // SDPIComponents.getSettings() returns the full didReceiveSettings payload:
+  // { settings, coordinates, isInMultiAction, ... }. Only payload.settings is
+  // the action's persisted settings object.
+  const payload = await streamDeckClient.getSettings();
+  return asSettings(payload?.settings);
+}
+
 function labelsFrom(items) {
   if (!Array.isArray(items)) return new Map();
   return new Map(
@@ -36,9 +44,17 @@ function setSelectValue(select, value) {
   }
 }
 
+function applySettings(settings) {
+  currentSettings = { ...asSettings(settings) };
+  setSelectValue(deviceSelect, currentSettings.deviceId);
+  setSelectValue(profileSelect, currentSettings.profileId);
+  profileSelect.disabled = !currentSettings.deviceId || lastPhase !== "ready";
+}
+
 async function saveSettings(settings) {
-  currentSettings = settings;
-  await streamDeckClient.setSettings(settings);
+  currentSettings = { ...asSettings(settings) };
+  console.debug("[SynapseDeck] Saving action settings", currentSettings);
+  await streamDeckClient.setSettings(currentSettings);
 }
 
 function setStatus(status) {
@@ -77,17 +93,22 @@ function setStatus(status) {
 }
 
 async function initialize() {
-  // sdpi-select's built-in `setting` persistence emits valuechange while it is
-  // hydrating the control. With dependent selects that can look like a real
-  // device change and clear profileId/profileName. We deliberately own the
-  // complete action-settings object here so each key is updated atomically.
-  currentSettings = asSettings(await streamDeckClient.getSettings());
-  setSelectValue(deviceSelect, currentSettings.deviceId);
-  setSelectValue(profileSelect, currentSettings.profileId);
-  profileSelect.disabled = !currentSettings.deviceId || lastPhase !== "ready";
+  // We deliberately own the complete action-settings object here instead of
+  // using sdpi-select's `setting` attribute. That prevents control hydration
+  // from being mistaken for a user device change and keeps every key's
+  // device/profile pair independent.
+  applySettings(await readActionSettings());
+  console.debug("[SynapseDeck] Loaded action settings", currentSettings);
   initialized = true;
   await streamDeckClient.send("sendToPlugin", { event: "getStatus" });
 }
+
+streamDeckClient.didReceiveSettings?.subscribe?.((message) => {
+  const settings = asSettings(message?.payload?.settings);
+  if (!initialized) return;
+  applySettings(settings);
+  console.debug("[SynapseDeck] Received action settings", currentSettings);
+});
 
 streamDeckClient.sendToPropertyInspector.subscribe((message) => {
   const payload = message?.payload;
@@ -105,6 +126,9 @@ streamDeckClient.sendToPropertyInspector.subscribe((message) => {
 
   if (payload.event === "getProfiles") {
     profileLabels = labelsFrom(payload.items);
+    if (currentSettings.profileId) {
+      setSelectValue(profileSelect, currentSettings.profileId);
+    }
   }
 });
 
@@ -114,8 +138,7 @@ deviceSelect.addEventListener("valuechange", async () => {
   const deviceId = typeof deviceSelect.value === "string" ? deviceSelect.value : "";
   if (deviceId === (currentSettings.deviceId || "")) return;
 
-  const latest = asSettings(await streamDeckClient.getSettings());
-  const next = { ...latest };
+  const next = { ...currentSettings };
 
   if (deviceId) {
     next.deviceId = deviceId;
@@ -134,7 +157,9 @@ deviceSelect.addEventListener("valuechange", async () => {
   await saveSettings(next);
 
   if (deviceId && lastPhase === "ready") {
-    await Promise.resolve(profileSelect.refresh?.());
+    // Tell the plugin exactly which device we just selected instead of relying
+    // on a second getSettings round trip racing the just-sent setSettings.
+    await streamDeckClient.send("sendToPlugin", { event: "getProfiles", deviceId });
   }
 });
 
@@ -144,8 +169,7 @@ profileSelect.addEventListener("valuechange", async () => {
   const profileId = typeof profileSelect.value === "string" ? profileSelect.value : "";
   if (profileId === (currentSettings.profileId || "")) return;
 
-  const latest = asSettings(await streamDeckClient.getSettings());
-  const next = { ...latest };
+  const next = { ...currentSettings };
 
   if (profileId) {
     next.profileId = profileId;
