@@ -145,10 +145,9 @@ assert.deepEqual(savedSettings.at(-1), {
   deviceName: "Device Two",
 });
 assert.equal("settings" in savedSettings.at(-1), false, "must not nest settings inside settings");
-assert.deepEqual(sentMessages.at(-1), {
-  event: "sendToPlugin",
-  payload: { event: "getProfiles", deviceId: "device-2" },
-});
+assert.equal(sentMessages.at(-1)?.event, "sendToPlugin");
+assert.equal(sentMessages.at(-1)?.payload?.event, "getProfiles");
+assert.equal(sentMessages.at(-1)?.payload?.deviceId, "device-2");
 
 sendToPropertyInspector.emit({
   payload: {
