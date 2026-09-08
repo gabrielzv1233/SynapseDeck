@@ -33,12 +33,37 @@ jobs:
       - name: Validate manifest and plugin
         run: npx streamdeck validate --no-update-check com.gabrielzv1233.synapsedeck.sdPlugin
 
+      - name: Compute plugin version
+        id: version
+        shell: pwsh
+        run: |
+          $baseVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($baseVersion -notmatch '^\d+\.\d+\.\d+$') {
+            throw "package.json version must use major.minor.patch format. Got: $baseVersion"
+          }
+          $version = "$baseVersion.${{ github.run_number }}"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "Packaging SynapseDeck $version"
+
       - name: Package plugin
-        run: npx streamdeck pack --no-update-check --force --output dist com.gabrielzv1233.synapsedeck.sdPlugin
+        run: npx streamdeck pack --no-update-check --force --version "${{ steps.version.outputs.version }}" --output dist com.gabrielzv1233.synapsedeck.sdPlugin
+
+      - name: Name versioned installer
+        shell: pwsh
+        run: |
+          $expected = "dist/SynapseDeck-v${{ steps.version.outputs.version }}.streamDeckPlugin"
+          $package = Get-ChildItem -Path dist -Filter *.streamDeckPlugin | Select-Object -First 1
+          if (-not $package) {
+            throw "Stream Deck package was not produced."
+          }
+          Move-Item -Force $package.FullName $expected
+          if (-not (Test-Path $expected)) {
+            throw "Expected package not found at $expected"
+          }
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v7
         with:
-          path: dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin
+          path: dist/SynapseDeck-v${{ steps.version.outputs.version }}.streamDeckPlugin
           archive: false
           if-no-files-found: error

@@ -32,20 +32,30 @@ jobs:
       - name: Validate manifest and plugin
         run: npx streamdeck validate --no-update-check com.gabrielzv1233.synapsedeck.sdPlugin
 
-      - name: Package plugin
-        run: npx streamdeck pack --no-update-check --force --output dist com.gabrielzv1233.synapsedeck.sdPlugin
-
-      - name: Verify package filename
+      - name: Compute plugin version
+        id: version
         shell: pwsh
         run: |
-          $expected = "dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin"
+          $baseVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($baseVersion -notmatch '^\d+\.\d+\.\d+$') {
+            throw "package.json version must use major.minor.patch format. Got: $baseVersion"
+          }
+          $version = "$baseVersion.${{ github.run_number }}"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "Packaging SynapseDeck $version"
+
+      - name: Package plugin
+        run: npx streamdeck pack --no-update-check --force --version "${{ steps.version.outputs.version }}" --output dist com.gabrielzv1233.synapsedeck.sdPlugin
+
+      - name: Name versioned installer
+        shell: pwsh
+        run: |
+          $expected = "dist/SynapseDeck-v${{ steps.version.outputs.version }}.streamDeckPlugin"
           $package = Get-ChildItem -Path dist -Filter *.streamDeckPlugin | Select-Object -First 1
           if (-not $package) {
             throw "Stream Deck package was not produced."
           }
-          if ($package.FullName -ne (Join-Path $PWD $expected)) {
-            Move-Item -Force $package.FullName $expected
-          }
+          Move-Item -Force $package.FullName $expected
           if (-not (Test-Path $expected)) {
             throw "Expected package not found at $expected"
           }
@@ -54,15 +64,16 @@ jobs:
         id: upload
         uses: actions/upload-artifact@v7
         with:
-          path: dist/com.gabrielzv1233.synapsedeck.streamDeckPlugin
+          path: dist/SynapseDeck-v${{ steps.version.outputs.version }}.streamDeckPlugin
           archive: false
           if-no-files-found: error
 
       - name: Add download link to summary
         shell: pwsh
         run: |
-          "## SynapseDeck build" >> $env:GITHUB_STEP_SUMMARY
+          $name = "SynapseDeck-v${{ steps.version.outputs.version }}.streamDeckPlugin"
+          "## SynapseDeck ${{ steps.version.outputs.version }}" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
-          "[Download com.gabrielzv1233.synapsedeck.streamDeckPlugin](${{ steps.upload.outputs.artifact-url }})" >> $env:GITHUB_STEP_SUMMARY
+          "[Download $name](${{ steps.upload.outputs.artifact-url }})" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
-          "Uploaded directly as a `.streamDeckPlugin` file with no outer ZIP archive." >> $env:GITHUB_STEP_SUMMARY
+          "The fourth version component increases with each Build Plugin run so opening a newer installer is treated as an update of the existing SynapseDeck installation." >> $env:GITHUB_STEP_SUMMARY
