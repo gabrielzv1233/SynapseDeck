@@ -1,6 +1,6 @@
 {
   "name": "synapsedeck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Control Razer Synapse 4 software profiles from Elgato Stream Deck through SynapseCTRL.",
   "type": "module",
