@@ -1,0 +1,35 @@
+{
+  "name": "synapsedeck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Control Razer Synapse 4 software profiles from Elgato Stream Deck through SynapseCTRL.",
+  "type": "module",
+  "scripts": {
+    "assets": "node scripts/prepare-assets.mjs",
+    "build": "npm run assets && rollup -c",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run build && streamdeck validate --no-update-check com.gabrielzv1233.synapsedeck.sdPlugin",
+    "pack": "npm run build && streamdeck pack --no-update-check --force --output dist com.gabrielzv1233.synapsedeck.sdPlugin",
+    "watch": "npm run assets && rollup -c -w --watch.onEnd=\"streamdeck restart com.gabrielzv1233.synapsedeck\""
+  },
+  "dependencies": {
+    "@elgato/streamdeck": "^2.1.2",
+    "@elgato/utils": "^0.6.0"
+  },
+  "devDependencies": {
+    "@elgato/cli": "^1.9.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^15.2.2",
+    "@rollup/plugin-terser": "^1.0.0",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "@tsconfig/node20": "^20.1.2",
+    "@types/node": "~24.1.0",
+    "rollup": "^4.0.2",
+    "sharp": "^0.34.3",
+    "tslib": "^2.6.2",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
