@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "SynapseDeck",
+  "Version": "0.1.0.0",
+  "Author": "gabrielzv1233",
+  "Description": "Control and monitor Razer Synapse 4 software profiles directly from Stream Deck, powered by SynapseCTRL.",
+  "UUID": "com.gabrielzv1233.synapsedeck",
+  "URL": "https://github.com/gabrielzv1233/SynapseDeck",
+  "SupportURL": "https://github.com/gabrielzv1233/SynapseDeck/blob/main/docs/Setup.md",
+  "Category": "SynapseDeck",
+  "CategoryIcon": "imgs/plugin/category-icon",
+  "Icon": "imgs/plugin/marketplace",
+  "CodePath": "bin/plugin.js",
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "Nodejs": {
+    "Version": "24",
+    "Debug": "enabled"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Actions": [
+    {
+      "Name": "Synapse Profile",
+      "UUID": "com.gabrielzv1233.synapsedeck.profile",
+      "Icon": "imgs/actions/profile/icon",
+      "Tooltip": "Switch a Razer Synapse software profile and show whether it is active.",
+      "PropertyInspectorPath": "ui/profile.html",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [
+        {
+          "Image": "imgs/actions/profile/inactive",
+          "TitleAlignment": "bottom"
+        },
+        {
+          "Image": "imgs/actions/profile/active",
+          "TitleAlignment": "bottom"
+        }
+      ]
+    }
+  ]
+}

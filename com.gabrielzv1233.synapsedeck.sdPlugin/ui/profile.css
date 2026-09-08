@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  padding: 10px 0 14px;
+  color: #d8d8d8;
+  background: #2d2d2d;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 9pt;
+}
+
+.status {
+  box-sizing: border-box;
+  margin: 0 12px 12px;
+  padding: 9px 10px;
+  border-left: 3px solid #969696;
+  background: #252525;
+  line-height: 1.35;
+}
+
+.status strong,
+.status span {
+  display: block;
+}
+
+.status span {
+  margin-top: 3px;
+  color: #b9b9b9;
+}
+
+.status a {
+  display: inline-block;
+  margin-top: 6px;
+  color: #69a9ff;
+  text-decoration: none;
+}
+
+.status.ready {
+  border-left-color: #44d62c;
+}
+
+.status.missing,
+.status.synapse-unavailable,
+.status.incompatible,
+.status.error {
+  border-left-color: #e2a400;
+}
+
+.footnote {
+  margin: 4px 12px 0;
+  color: #969696;
+  font-size: 8.5pt;
+  line-height: 1.4;
+}

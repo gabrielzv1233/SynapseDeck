@@ -1,0 +1,9 @@
+SynapseDeck
+Copyright 2026 Gabriel (gabrielzv1233)
+
+SynapseDeck is an Elgato Stream Deck integration for Razer Synapse 4 software-profile control.
+
+Razer Synapse device/profile discovery, state monitoring, and profile switching are provided by SynapseCTRL:
+https://github.com/gabrielzv1233/SynapseCTRL
+
+SynapseDeck and SynapseCTRL are independent community projects and are not affiliated with or endorsed by Razer or Elgato.

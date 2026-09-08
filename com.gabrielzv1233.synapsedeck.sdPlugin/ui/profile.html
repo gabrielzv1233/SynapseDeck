@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Synapse Profile</title>
+  <script src="sdpi-components.js"></script>
+  <link rel="stylesheet" href="profile.css" />
+</head>
+<body>
+  <section id="status" class="status starting" aria-live="polite">
+    <strong id="status-title">Connecting to SynapseCTRL…</strong>
+    <span id="status-message">SynapseDeck is starting its private SynapseCTRL bridge.</span>
+    <a id="setup-link" href="https://github.com/gabrielzv1233/SynapseDeck/blob/main/docs/Setup.md">Setup & troubleshooting</a>
+  </section>
+
+  <sdpi-item label="Device">
+    <sdpi-select
+      id="device"
+      setting="deviceId"
+      label-setting="deviceName"
+      datasource="getDevices"
+      loading="Finding Razer devices…"
+      placeholder="Select a device"
+      show-refresh
+      hot-reload>
+    </sdpi-select>
+  </sdpi-item>
+
+  <sdpi-item label="Profile">
+    <sdpi-select
+      id="profile"
+      setting="profileId"
+      label-setting="profileName"
+      datasource="getProfiles"
+      loading="Finding Synapse profiles…"
+      placeholder="Select a profile"
+      show-refresh
+      hot-reload>
+    </sdpi-select>
+  </sdpi-item>
+
+  <sdpi-item label="Connection">
+    <sdpi-button id="retry">Retry SynapseCTRL</sdpi-button>
+  </sdpi-item>
+
+  <p class="footnote">SynapseDeck starts and owns SynapseCTRL bridge mode automatically. You do not need to keep a separate terminal open.</p>
+
+  <script src="profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and validate Stream Deck plugin
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate manifest and plugin
+        run: npx streamdeck validate --no-update-check com.gabrielzv1233.synapsedeck.sdPlugin
+
+      - name: Package plugin
+        run: npx streamdeck pack --no-update-check --force --output dist com.gabrielzv1233.synapsedeck.sdPlugin
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SynapseDeck
+          path: dist/*.streamDeckPlugin
+          if-no-files-found: error
